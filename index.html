@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Matches</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      max-width: 700px;
+      margin: auto;
+    }
+    li {
+      background: white;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-size: 16px;
+    }
+    a {
+      text-decoration: none;
+      color: #222;
+      font-weight: bold;
+    }
+    a:hover {
+      color: #cc0000;
+    }
+    button.playlistBtn, #toggleAllBtn {
+      margin: 5px;
+      padding: 8px 14px;
+      background: #444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.playlistBtn:hover, #toggleAllBtn:hover {
+      background: #222;
+    }
+    #playlistButtons {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Football Matches</h1>
+
+<div id="playlistButtons"></div>
+
+<ul id="matchList"></ul>
+<button id="toggleAllBtn">Show All Videos</button>
+<ul id="allVideosList" style="display: none;"></ul>
+
+<script>
+  const API_KEY = "AIzaSyArcx5j9F0TTrrEAUkN9frHuIiJTFz9G54";
+
+  const playlists = [
+    { name: "Premier League Summer Series", id: "PLISuFiQTdKDUswnbwE58RshBRbPOQbAMJ" },
+    { name: "Premier League 2024/2025 Season", id: "PLISuFiQTdKDWc1PjlgqIAm1Bzc38MoLa6" },
+    { name: "EFL Highlights 2025/2026", id: "PLvij5I1MVvM2GVygBHCTj-L3irIdF8eiV" }
+  ];
+
+  const teamNames = [
+    // Premier League
+    "Arsenal","Aston Villa","Bournemouth","Brentford","Brighton & Hove Albion","Burnley","Chelsea",
+    "Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Man Utd",
+    "Newcastle United","Nottingham Forest","Tottenham Hotspur","West Ham United","Wolverhampton Wanderers",
+    // Expanded EFL + provided list
+    "Birmingham","Leicester","Leicester City","Sheffield Wednesday","Sheff Utd","Sheffield United","Bristol City",
+    "Exeter","Blackpool","Swindon","Cambridge","Tranmere","Shrewsbury","Stoke","Derby","Harrogate","Grimsby",
+    "Oxford","Portsmouth","QPR","Queens Park Rangers","Preston","Preston North End","Norwich","Millwall","Bolton",
+    "Plymouth","Plymouth Argyle","Middlesbrough","Swansea","Reading","Huddersfield","Southampton","Wrexham",
+    "Charlton","Watford","Coventry","Hull","Notts County","Salford City","Ipswich","Port Vale","Cardiff",
+    "Stockport","Stockport County","Stevenage","Wigan","Northampton","Lincoln","Bradford","Wycombe","Leyton Orient",
+    "Barnet","Fleetwood","Barnsley","Walsall","Peterborough","Luton Town","AFC Wimbledon"
+  ];
+
+  const matchList = document.getElementById("matchList");
+  const allVideosList = document.getElementById("allVideosList");
+  const toggleAllBtn = document.getElementById("toggleAllBtn");
+  const playlistButtons = document.getElementById("playlistButtons");
+
+  function findTeams(title) {
+    const found = [];
+    teamNames.forEach(team => {
+      const regex = new RegExp(`\\b${team}\\b`, "i");
+      if (regex.test(title) && !found.includes(team)) {
+        found.push(team);
+      }
+    });
+    return found;
+  }
+
+  function clearLists() {
+    matchList.innerHTML = "";
+    allVideosList.innerHTML = "";
+  }
+
+  async function fetchPlaylistItems(playlistId, pageToken = "") {
+    let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${API_KEY}`;
+    if (pageToken) url += `&pageToken=${pageToken}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+      matchList.innerHTML = `<li style="color:red;">Error: ${data.error.message}</li>`;
+      return;
+    }
+
+    data.items.forEach(item => {
+      const title = item.snippet.title;
+      const videoId = item.snippet.resourceId.videoId;
+      const foundTeams = findTeams(title);
+
+      if (foundTeams.length === 2) {
+        addMatch(foundTeams[0], foundTeams[1], videoId);
+      } else if (foundTeams.length === 1) {
+        addMatch(foundTeams[0], "Unknown", videoId);
+      }
+
+      addAllVideo(title, foundTeams, videoId);
+    });
+
+    if (data.nextPageToken) {
+      await fetchPlaylistItems(playlistId, data.nextPageToken);
+    }
+  }
+
+  function addMatch(teamA, teamB, videoId) {
+    const li = document.createElement("li");
+    const link = document.createElement("a");
+    link.textContent = `${teamA} vs ${teamB}`;
+    link.href = `https://www.youtube.com/watch?v=${videoId}`;
+    link.target = "_blank";
+    li.appendChild(link);
+    matchList.appendChild(li);
+  }
+
+  function addAllVideo(title, foundTeams, videoId) {
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${title}</strong><br><small>Teams detected: ${foundTeams.join(", ") || "None"}</small>`;
+    li.style.fontSize = "14px";
+    li.addEventListener("click", () => window.open(`https://www.youtube.com/watch?v=${videoId}`, "_blank"));
+    allVideosList.appendChild(li);
+  }
+
+  toggleAllBtn.addEventListener("click", () => {
+    if (allVideosList.style.display === "none") {
+      allVideosList.style.display = "block";
+      toggleAllBtn.textContent = "Hide All Videos";
+    } else {
+      allVideosList.style.display = "none";
+      toggleAllBtn.textContent = "Show All Videos";
+    }
+  });
+
+  function createPlaylistButtons() {
+    playlists.forEach(pl => {
+      const btn = document.createElement("button");
+      btn.textContent = pl.name;
+      btn.className = "playlistBtn";
+      btn.addEventListener("click", () => {
+        clearLists();
+        fetchPlaylistItems(pl.id);
+      });
+      playlistButtons.appendChild(btn);
+    });
+  }
+
+  createPlaylistButtons();
+</script>
+
+</body>
+</html>
