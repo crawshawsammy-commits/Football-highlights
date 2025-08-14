@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Highlights</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+    h1 { text-align: center; }
+    h2 { margin-top: 30px; }
+    a { text-decoration: none; color: #1a0dab; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Football Highlights</h1>
+  <div id="playlists"></div>
+
+  <script>
+    const API_KEY = "AIzaSyArcx5j9F0TTrrEAUkN9frHuIiJTFz9G54"; // your API key
+
+    const PLAYLISTS = [
+      {id: "PLISuFiQTdKDWc1PjlgqIAm1Bzc38MoLa6", name: "Premier League 2024/2025 Season"},
+      {id: "PLISuFiQTdKDUswnbwE58RshBRbPOQbAMJ", name: "Premier League Summer Series"},
+      {id: "PLvij5I1MVvM2GVygBHCTj-L3irIdF8eiV", name: "EFL highlights 2025/2026"}
+    ];
+
+    const TEAMS = [
+      "Arsenal","Aston Villa","Bournemouth","Brentford","Brighton & Hove Albion","Brighton",
+      "Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool",
+      "Manchester City","Man City","Man Utd","Newcastle United","Newcastle","Nottingham Forest",
+      "Tottenham Hotspur","Spurs","West Ham United","West Ham","Wolverhampton Wanderers","Wolves",
+      "Birmingham","Blackburn Rovers","Bristol City","Charlton Athletic","Coventry City","Coventry",
+      "Derby County","Derby","Hull City","Hull","Ipswich Town","Ipswich","Leicester City","Leicester",
+      "Middlesbrough","Millwall","Norwich City","Oxford United","Portsmouth","Preston North End","Preston",
+      "Queens Park Rangers","QPR","Sheffield United","Sheff Utd","Sheffield Wednesday","Southampton",
+      "Stoke City","Stoke","Swansea City","Watford","West Bromwich Albion","Wrexham","AFC Wimbledon",
+      "Barnsley","Blackpool","Bolton Wanderers","Bolton","Bradford City","Bradford","Burton Albion","Cardiff City","Cardiff",
+      "Doncaster Rovers","Exeter City","Exeter","Huddersfield Town","Huddersfield","Leyton Orient","Lincoln City","Luton Town",
+      "Mansfield Town","Northampton Town","Northampton","Peterborough United","Peterborough","Plymouth Argyle","Plymouth",
+      "Port Vale","Reading","Rotherham United","Stevenage","Stockport County","Stockport","Wigan Athletic","Wigan",
+      "Wycombe Wanderers","Wycombe","Accrington Stanley","Barnet","Barrow","Bristol Rovers","Bromley","Cambridge United","Cambridge",
+      "Cheltenham Town","Chesterfield","Colchester United","Crawley Town","Crewe Alexandra","Fleetwood Town","Gillingham",
+      "Grimsby Town","Grimsby","Harrogate Town","Harrogate","Milton Keynes Dons","Newport County","Notts County","Oldham Athletic",
+      "Salford City","Shrewsbury Town","Shrewsbury","Swindon Town","Swindon","Tranmere Rovers","Tranmere","Walsall"
+    ];
+
+    async function fetchPlaylist(playlistId) {
+      const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.items || [];
+    }
+
+    function extractTeams(title) {
+      let foundTeams = TEAMS.filter(team => title.toLowerCase().includes(team.toLowerCase()));
+      if (foundTeams.length >= 2) {
+        return foundTeams.slice(0,2).join(" vs ");
+      } else if (foundTeams.length === 1) {
+        return foundTeams[0] + " vs Unknown";
+      } else {
+        return title;
+      }
+    }
+
+    async function displayPlaylists() {
+      const container = document.getElementById("playlists");
+      container.innerHTML = ""; // clear previous content
+      for (let p of PLAYLISTS) {
+        const playlistDiv = document.createElement("div");
+        playlistDiv.innerHTML = `<h2>${p.name}</h2>`;
+        const videos = await fetchPlaylist(p.id);
+        videos.forEach(v => {
+          const teamTitle = extractTeams(v.snippet.title);
+          const link = document.createElement("a");
+          link.href = `https://www.youtube.com/watch?v=${v.snippet.resourceId.videoId}`;
+          link.target = "_blank";
+          link.textContent = teamTitle;
+          playlistDiv.appendChild(link);
+          playlistDiv.appendChild(document.createElement("br"));
+        });
+        container.appendChild(playlistDiv);
+      }
+    }
+
+    displayPlaylists();
+  </script>
+</body>
+</html>
