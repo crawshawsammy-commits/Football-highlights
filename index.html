@@ -1,0 +1,146 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Highlights</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: #f9f9f9; 
+      margin: 0; 
+      padding: 20px; 
+      color: #333;
+    }
+    h1 { 
+      text-align: center; 
+      margin-bottom: 20px;
+      color: #222;
+    }
+    p.instruction {
+      background: #fff3cd;
+      border-left: 5px solid #ffeeba;
+      padding: 15px;
+      font-size: 14px;
+      max-width: 800px;
+      margin: 0 auto 30px auto;
+      border-radius: 5px;
+    }
+    h2 { 
+      margin-top: 30px; 
+      border-bottom: 2px solid #ccc; 
+      padding-bottom: 5px;
+      color: #444;
+    }
+    .playlist { 
+      margin-bottom: 50px; 
+    }
+    .videos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .video-link {
+      display: block;
+      padding: 12px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      color: #1a0dab;
+      text-decoration: none;
+      font-weight: 500;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    .video-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Football Highlights</h1>
+  <p class="instruction">
+    To avoid seeing the video thumbnail on YouTube, right click on the link and select "Open in new tab" then, once it's loaded, click on the new tab and press <strong>F</strong> on your keyboard to open the video in full screen.
+  </p>
+  <div id="playlists"></div>
+
+  <script>
+    const API_KEY = "AIzaSyArcx5j9F0TTrrEAUkN9frHuIiJTFz9G54";
+
+    const PLAYLISTS = [
+      {id: "PLISuFiQTdKDWc1PjlgqIAm1Bzc38MoLa6", name: "Premier League 2024/2025 Season"},
+      {id: "PLISuFiQTdKDUswnbwE58RshBRbPOQbAMJ", name: "Premier League Summer Series"},
+      {id: "PLvij5I1MVvM2GVygBHCTj-L3irIdF8eiV", name: "EFL highlights 2025/2026"}
+    ];
+
+    const TEAMS = [
+      "Arsenal","Aston Villa","Bournemouth","Brentford","Brighton & Hove Albion","Brighton",
+      "Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool",
+      "Manchester City","Man City","Manchester United","Man United","Man Utd","Newcastle United","Newcastle","Nottingham Forest",
+      "Tottenham Hotspur","Spurs","West Ham United","West Ham","Wolverhampton Wanderers","Wolves",
+      "Birmingham","Blackburn Rovers","Bristol City","Charlton Athletic","Coventry City","Coventry",
+      "Derby County","Derby","Hull City","Hull","Ipswich Town","Ipswich","Leicester City","Leicester",
+      "Middlesbrough","Millwall","Norwich City","Oxford United","Portsmouth","Preston North End","Preston",
+      "Queens Park Rangers","QPR","Sheffield United","Sheff Utd","Sheffield Wednesday","Southampton",
+      "Stoke City","Stoke","Swansea City","Watford","West Bromwich Albion","Wrexham","AFC Wimbledon",
+      "Barnsley","Blackpool","Bolton Wanderers","Bolton","Bradford City","Bradford","Burton Albion","Cardiff City","Cardiff",
+      "Doncaster Rovers","Exeter City","Exeter","Huddersfield Town","Huddersfield","Leyton Orient","Lincoln City","Luton Town",
+      "Mansfield Town","Northampton Town","Northampton","Peterborough United","Peterborough","Plymouth Argyle","Plymouth",
+      "Port Vale","Reading","Rotherham United","Stevenage","Stockport County","Stockport","Wigan Athletic","Wigan",
+      "Wycombe Wanderers","Wycombe","Accrington Stanley","Barnet","Barrow","Bristol Rovers","Bromley","Cambridge United","Cambridge",
+      "Cheltenham Town","Chesterfield","Colchester United","Crawley Town","Crewe Alexandra","Fleetwood Town","Gillingham",
+      "Grimsby Town","Grimsby","Harrogate Town","Harrogate","Milton Keynes Dons","Newport County","Notts County","Oldham Athletic",
+      "Salford City","Shrewsbury Town","Shrewsbury","Swindon Town","Swindon","Tranmere Rovers","Tranmere","Walsall"
+    ];
+
+    async function fetchPlaylist(playlistId) {
+      const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.items || [];
+    }
+
+    function extractTeams(title) {
+      let foundTeams = TEAMS.filter(team => title.toLowerCase().includes(team.toLowerCase()));
+      if (foundTeams.length >= 2) {
+        return foundTeams.slice(0,2).join(" vs ");
+      } else if (foundTeams.length === 1) {
+        return foundTeams[0] + " vs Unknown";
+      } else {
+        return title;
+      }
+    }
+
+    async function displayPlaylists() {
+      const container = document.getElementById("playlists");
+      container.innerHTML = "";
+      for (let p of PLAYLISTS) {
+        const playlistDiv = document.createElement("div");
+        playlistDiv.className = "playlist";
+        playlistDiv.innerHTML = `<h2>${p.name}</h2>`;
+        
+        const videos = await fetchPlaylist(p.id);
+        const grid = document.createElement("div");
+        grid.className = "videos-grid";
+
+        videos.forEach(v => {
+          const teamTitle = extractTeams(v.snippet.title);
+          const link = document.createElement("a");
+          link.href = `https://www.youtube.com/watch?v=${v.snippet.resourceId.videoId}`;
+          link.target = "_blank";
+          link.className = "video-link";
+          link.textContent = teamTitle;
+          grid.appendChild(link);
+        });
+
+        playlistDiv.appendChild(grid);
+        container.appendChild(playlistDiv);
+      }
+    }
+
+    displayPlaylists();
+  </script>
+</body>
+</html>
